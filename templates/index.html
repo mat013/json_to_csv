@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to CSV Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .options {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-convert {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-convert:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-convert:active {
+            transform: translateY(0);
+        }
+
+        .btn-copy {
+            background: #f0f0f0;
+            color: #333;
+            min-width: 120px;
+        }
+
+        .btn-copy:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-download {
+            background: #4caf50;
+            color: white;
+            min-width: 120px;
+        }
+
+        .btn-download:hover {
+            background: #45a049;
+        }
+
+        .btn-copy:disabled,
+        .btn-download:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .output-section {
+            display: none;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .output-section.active {
+            display: block;
+        }
+
+        .output-label {
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .csv-preview {
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 400px;
+            overflow: auto;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .error {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            color: #c62828;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .success {
+            background: #e8f5e9;
+            border: 1px solid #66bb6a;
+            color: #2e7d32;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #667eea;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats {
+            color: #666;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            textarea {
+                min-height: 200px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn-convert,
+            .btn-copy,
+            .btn-download {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JSON to CSV Converter</h1>
+        <p class="subtitle">Paste JSON or YAML and convert to CSV</p>
+
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+        <div class="loading" id="loading">
+            <span class="spinner"></span>Converting...
+        </div>
+
+        <div class="input-section">
+            <label for="jsonInput">JSON/YAML Input</label>
+            <textarea id="jsonInput" placeholder="Paste your JSON or YAML here..."></textarea>
+        </div>
+
+        <div class="options">
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="expandCheckbox">
+                <label for="expandCheckbox" class="checkbox-label">Expand lists to multiple rows</label>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-convert" onclick="convertJSON()">Convert to CSV</button>
+            <button class="btn-copy" id="copyBtn" onclick="copyToClipboard()" disabled>Copy CSV</button>
+            <button class="btn-download" id="downloadBtn" onclick="downloadCSV()" disabled>Download CSV</button>
+        </div>
+
+        <div class="output-section" id="outputSection">
+            <p class="output-label">CSV Output:</p>
+            <div class="csv-preview" id="csvOutput"></div>
+            <div class="stats" id="stats"></div>
+        </div>
+    </div>
+
+    <script>
+        let csvContent = null;
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMsg');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            document.getElementById('successMsg').classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMsg');
+            successEl.textContent = message;
+            successEl.classList.add('show');
+            document.getElementById('errorMsg').classList.remove('show');
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMsg').classList.remove('show');
+            document.getElementById('successMsg').classList.remove('show');
+        }
+
+        function setLoading(isLoading) {
+            document.getElementById('loading').classList.toggle('show', isLoading);
+        }
+
+        async function convertJSON() {
+            const input = document.getElementById('jsonInput').value.trim();
+            const expand = document.getElementById('expandCheckbox').checked;
+
+            if (!input) {
+                showError('Please paste JSON or YAML');
+                return;
+            }
+
+            hideMessages();
+            setLoading(true);
+
+            try {
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: input,
+                        expand: expand
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(data.error || 'Conversion failed');
+                    setLoading(false);
+                    return;
+                }
+
+                csvContent = data.csv;
+                displayCSV(csvContent);
+                showSuccess('Conversion successful!');
+                document.getElementById('copyBtn').disabled = false;
+                document.getElementById('downloadBtn').disabled = false;
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function displayCSV(csv) {
+            const lines = csv.split('\n');
+            const preview = lines.slice(0, 20).join('\n');
+            document.getElementById('csvOutput').textContent = preview;
+
+            const rows = lines.filter(l => l.trim()).length - 1;
+            const cols = lines[0] ? lines[0].split(',').length : 0;
+            document.getElementById('stats').textContent = `Rows: ${rows} | Columns: ${cols}`;
+
+            document.getElementById('outputSection').classList.add('active');
+        }
+
+        function copyToClipboard() {
+            if (!csvContent) return;
+            navigator.clipboard.writeText(csvContent).then(() => {
+                showSuccess('CSV copied to clipboard!');
+                setTimeout(() => {
+                    document.getElementById('successMsg').classList.remove('show');
+                }, 3000);
+            }).catch(() => {
+                showError('Failed to copy to clipboard');
+            });
+        }
+
+        function downloadCSV() {
+            if (!csvContent) return;
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'data.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.getElementById('jsonInput').addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                convertJSON();
+            }
+        });
+    </script>
+</body>
+</html>
